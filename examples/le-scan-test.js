@@ -51,6 +51,7 @@ bluetoothHciSocket.on('error', function(error) {
 var HCI_COMMAND_PKT = 0x01;
 var HCI_ACLDATA_PKT = 0x02;
 var HCI_EVENT_PKT = 0x04;
+const OGF_HOST_CTL = 0x03;
 
 var EVT_CMD_COMPLETE = 0x0e;
 var EVT_CMD_STATUS = 0x0f;
@@ -61,12 +62,48 @@ var EVT_LE_ADVERTISING_REPORT = 0x02;
 var OGF_LE_CTL = 0x08;
 var OCF_LE_SET_SCAN_PARAMETERS = 0x000b;
 var OCF_LE_SET_SCAN_ENABLE = 0x000c;
+const OCF_SET_EVENT_MASK = 0x0001;
+const OCF_LE_SET_EVENT_MASK = 0x0001;
 
 
 var LE_SET_SCAN_PARAMETERS_CMD = OCF_LE_SET_SCAN_PARAMETERS | OGF_LE_CTL << 10;
 var LE_SET_SCAN_ENABLE_CMD = OCF_LE_SET_SCAN_ENABLE | OGF_LE_CTL << 10;
+const SET_EVENT_MASK_CMD = OCF_SET_EVENT_MASK | (OGF_HOST_CTL << 10);
+const LE_SET_EVENT_MASK_CMD = OCF_LE_SET_EVENT_MASK | (OGF_LE_CTL << 10);
+
 
 var HCI_SUCCESS = 0;
+
+function setEventMask() {
+  const cmd = Buffer.alloc(12);
+  const eventMask = Buffer.from('fffffbff07f8bf3d', 'hex');
+
+  // header
+  cmd.writeUInt8(HCI_COMMAND_PKT, 0);
+  cmd.writeUInt16LE(SET_EVENT_MASK_CMD, 1);
+
+  // length
+  cmd.writeUInt8(eventMask.length, 3);
+
+  eventMask.copy(cmd, 4);
+
+  bluetoothHciSocket.write(cmd);
+};
+
+function setLeEventMask() {
+  const cmd = Buffer.alloc(12);
+  const leEventMask = Buffer.from('1fff000000000000', 'hex')
+
+  // header
+  cmd.writeUInt8(HCI_COMMAND_PKT, 0);
+  cmd.writeUInt16LE(LE_SET_EVENT_MASK_CMD, 1);
+
+  // length
+  cmd.writeUInt8(leEventMask.length, 3);
+
+  leEventMask.copy(cmd, 4);
+  bluetoothHciSocket.write(cmd);
+};
 
 function setFilter() {
   var filter = new Buffer(14);
@@ -120,9 +157,13 @@ function setScanEnable(enabled, duplicates) {
   bluetoothHciSocket.write(cmd);
 }
 
+
 bluetoothHciSocket.bindRaw();
 setFilter();
 bluetoothHciSocket.start();
+
+setEventMask();
+setLeEventMask();
 
 setScanEnable(false, true);
 
