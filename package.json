@@ -1,6 +1,6 @@
 {
   "name": "@abandonware/bluetooth-hci-socket",
-  "version": "0.5.3-10",
+  "version": "0.6.0",
   "description": "Bluetooth HCI socket binding for Node.js",
   "main": "index.js",
   "types": "index.d.ts",
@@ -24,12 +24,16 @@
     "linux",
     "android",
     "freebsd",
-    "win32"
+    "win32",
+    "darwin"
   ],
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.10",
     "debug": "^4.3.4",
-    "nan": "^2.17.0"
+    "nan": "^2.17.0",
+    "serialport": "^10.4.0",
+    "async": "^3.2.4"
+
   },
   "optionalDependencies": {
     "usb": "^1.9.2"
