@@ -1,0 +1,161 @@
+From 95f8cb1e22f514092f7e2ffc8e887a26d37cb7cd Mon Sep 17 00:00:00 2001
+From: Marek Serafin <marek@snowheads.pl>
+Date: Thu, 29 Sep 2022 16:07:07 +0200
+Subject: [PATCH] hci uart on usb cdc
+
+Cleanup UART Example
+
+config updates
+---
+ samples/bluetooth/hci_uart/Kconfig            |  7 +++
+ .../boards/nrf52840dk_nrf52840.overlay        | 18 +++++--
+ samples/bluetooth/hci_uart/prj.conf           | 54 ++++++++++++++-----
+ samples/bluetooth/hci_uart/src/main.c         |  8 ++-
+ 4 files changed, 68 insertions(+), 19 deletions(-)
+ create mode 100644 samples/bluetooth/hci_uart/Kconfig
+
+diff --git a/samples/bluetooth/hci_uart/Kconfig b/samples/bluetooth/hci_uart/Kconfig
+new file mode 100644
+index 0000000000..0db92f0403
+--- /dev/null
++++ b/samples/bluetooth/hci_uart/Kconfig
+@@ -0,0 +1,7 @@
++# Copyright (c) 2019 Nordic Semiconductor ASA
++# SPDX-License-Identifier: Apache-2.0
++
++config USB_DEVICE_PID
++	default USB_PID_CDC_ACM_COMPOSITE_SAMPLE
++
++source "Kconfig.zephyr"
+diff --git a/samples/bluetooth/hci_uart/boards/nrf52840dk_nrf52840.overlay b/samples/bluetooth/hci_uart/boards/nrf52840dk_nrf52840.overlay
+index b3c844493c..580854bc90 100644
+--- a/samples/bluetooth/hci_uart/boards/nrf52840dk_nrf52840.overlay
++++ b/samples/bluetooth/hci_uart/boards/nrf52840dk_nrf52840.overlay
+@@ -1,8 +1,16 @@
+ /* SPDX-License-Identifier: Apache-2.0 */
+ 
+-&uart0 {
+-	compatible = "nordic,nrf-uart";
+-	current-speed = <1000000>;
+-	status = "okay";
+-	hw-flow-control;
++/ {
++     chosen {
++     	zephyr,bt-c2h-uart = &cdc_acm_uart0;
++     };
+ };
++
++&zephyr_udc0 {
++     cdc_acm_uart0: cdc_acm_uart0 {
++            compatible = "zephyr,cdc-acm-uart";
++            label = "CDC_ACM_0";
++			current-speed = <1000000>;
++			hw-flow-control;
++     };
++};
+\ No newline at end of file
+diff --git a/samples/bluetooth/hci_uart/prj.conf b/samples/bluetooth/hci_uart/prj.conf
+index bdc73dd68e..41fd4be447 100644
+--- a/samples/bluetooth/hci_uart/prj.conf
++++ b/samples/bluetooth/hci_uart/prj.conf
+@@ -1,23 +1,51 @@
+-CONFIG_CONSOLE=n
++CONFIG_CONSOLE=y
+ CONFIG_STDOUT_CONSOLE=n
+ CONFIG_UART_CONSOLE=n
+ CONFIG_GPIO=y
+ CONFIG_SERIAL=y
+-CONFIG_UART_INTERRUPT_DRIVEN=y
+ CONFIG_BT=y
+ CONFIG_BT_HCI_RAW=y
+ CONFIG_BT_HCI_RAW_H4=y
+ CONFIG_BT_HCI_RAW_H4_ENABLE=y
+-CONFIG_BT_BUF_ACL_RX_SIZE=255
+-CONFIG_BT_BUF_CMD_TX_SIZE=255
+-CONFIG_BT_BUF_EVT_DISCARDABLE_SIZE=255
++CONFIG_BT_BUF_EVT_DISCARDABLE_SIZE=251
+ CONFIG_BT_CTLR_ASSERT_HANDLER=y
+-CONFIG_BT_MAX_CONN=16
+-CONFIG_BT_TINYCRYPT_ECC=n
++CONFIG_BT_MAX_CONN=5
++CONFIG_BT_CTLR_DTM_HCI=y
++CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE=2048
++CONFIG_USE_SEGGER_RTT=y
++CONFIG_RTT_CONSOLE=y
++CONFIG_LOG=y
++CONFIG_BT_BUF_CMD_TX_COUNT=40
++CONFIG_BT_BUF_ACL_RX_COUNT=40
++CONFIG_BT_BUF_ACL_TX_COUNT=80
++CONFIG_BT_BUF_EVT_RX_COUNT=80
++CONFIG_BT_BUF_ACL_RX_SIZE=1024
++CONFIG_BT_BUF_ACL_TX_SIZE=1024
++CONFIG_BT_BUF_CMD_TX_SIZE=251
++CONFIG_BT_BUF_EVT_RX_SIZE=251
++CONFIG_BT_HCI_TX_STACK_SIZE=1024
++CONFIG_BT_CTLR=y
++CONFIG_BT_LL_SW_SPLIT=y
++CONFIG_BT_CTLR_CRYPTO=y
++CONFIG_BT_CTLR_LE_ENC=y
++CONFIG_BT_CTLR_PRIVACY=y
++CONFIG_BT_CTLR_FILTER_ACCEPT_LIST=y
+ CONFIG_BT_CTLR_DTM_HCI=y
+-
+-CONFIG_SYSTEM_WORKQUEUE_STACK_SIZE=512
+-
+-# Workaround: Unable to allocate command buffer when using K_NO_WAIT since
+-# Host number of completed commands does not follow normal flow control.
+-CONFIG_BT_BUF_CMD_TX_COUNT=10
++CONFIG_BT_CTLR_ADVANCED_FEATURES=y
++CONFIG_BT_CTLR_PARAM_CHECK=y
++CONFIG_BT_CTLR_PROFILE_ISR=y
++CONFIG_BT_BUF_EVT_DISCARDABLE_SIZE=251
++CONFIG_LOG_BACKEND_RTT_MODE_DROP=n
++CONFIG_BT_CTLR_RX_BUFFERS=18
++CONFIG_BT_CTLR_ASSERT_HANDLER=y
++CONFIG_BT_WAIT_NOP=y
++CONFIG_UART_INTERRUPT_DRIVEN=y
++CONFIG_UART_LINE_CTRL=y
++CONFIG_USB_DEVICE_STACK=y
++CONFIG_USB_DEVICE_PRODUCT="ASSA ABLOY UART HCI Dongle"
++CONFIG_USB_COMPOSITE_DEVICE=y
++CONFIG_USB_CDC_ACM_RINGBUF_SIZE=10240
++CONFIG_USB_DEVICE_LOG_LEVEL_ERR=y
++CONFIG_USB_DRIVER_LOG_LEVEL_ERR=y
++CONFIG_USB_DEVICE_VID=0x2554
++CONFIG_USB_DEVICE_PID=0xD00D
+diff --git a/samples/bluetooth/hci_uart/src/main.c b/samples/bluetooth/hci_uart/src/main.c
+index a93ab0cf52..b694991529 100644
+--- a/samples/bluetooth/hci_uart/src/main.c
++++ b/samples/bluetooth/hci_uart/src/main.c
+@@ -19,6 +19,7 @@
+ #include <zephyr/device.h>
+ #include <zephyr/init.h>
+ #include <zephyr/drivers/uart.h>
++#include <zephyr/usb/usb_device.h>
+ 
+ #include <zephyr/net/buf.h>
+ #include <zephyr/bluetooth/bluetooth.h>
+@@ -185,7 +186,6 @@ static void rx_isr(void)
+ 		{
+ 			uint8_t discard[H4_DISCARD_LEN];
+ 			size_t to_read = MIN(remaining, sizeof(discard));
+-
+ 			read = h4_read(hci_uart_dev, discard, to_read);
+ 			remaining -= read;
+ 			if (remaining == 0) {
+@@ -351,6 +351,12 @@ void main(void)
+ 	static K_FIFO_DEFINE(rx_queue);
+ 	int err;
+ 
++	err = usb_enable(NULL);
++	if (err != 0) {
++		LOG_ERR("Failed to enable USB");
++		return;
++	}
++
+ 	LOG_DBG("Start");
+ 	__ASSERT(hci_uart_dev, "UART device is NULL");
+ 
+-- 
+2.37.0 (Apple Git-136)
+
