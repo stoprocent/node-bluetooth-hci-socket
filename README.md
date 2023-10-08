@@ -34,6 +34,25 @@ __NOTE:__ Currently only supports __Linux__, __FreeBSD__ and __Windows__.
 
 __NOTE:__ `node-gyp` is only required if the npm cannot find binary for your OS version otherwise the binaries are prebuilt.
 
+### UART/Serial (Any OS)
+
+The reason to use this configuration is more universal transport that can work across multiple operating systems.
+Idea is to use Zephyr HCI over UART firmware and to interface with HCI over UART.
+
+##### How to use this?
+
+1. You will need for example NRF5x module (e.g. nRF52840 PDK or nRF52840 USB)
+2. 	If you have `nRF52840 PDK` you can in fact just use compiled HEX [misc/nrf52840-usb-cdc.hex](misc/nrf52840-usb-cdc.hex) (Buad Rate set to `1000000`)
+3. If you want to compile it yourself:
+	1. You will need to install Zephyr ([https://docs.zephyrproject.org/latest/getting_started/index.html](https://docs.zephyrproject.org/latest/getting_started/index.html))
+	2. Compile HCI UART Example - `west build -p auto -b <your-board-name> zephyr/samples/bluetooth/hci_uart`
+		- e.g. When using `nRF52840 PDK` call `west build -p auto -b nrf52840dk_nrf52840 zephyr/samples/bluetooth/hci_uart`
+4. Flash the firmware to Nordic Board e.g. using `nrfjprog`
+		- e.g. `nrfjprog -f NRF52 --program misc/nrf52840-usb-cdc.hex –-chiperase --reset`
+5. When you get a nordic board connected to the PC/Mac etc. with UART interface you are good to go. Schematic for the connection [can be found here](misc/connection.png).
+6. In order to run any example from the examples folder or your own code you have to provide UART port by defining env variable: `BLUETOOTH_HCI_SOCKET_UART_PORT`. Optionally if you use different Baud Rate you can change it by specifing `BLUETOOTH_HCI_SOCKET_UART_BAUDRATE`. Default value is `1000000`
+7. e.g. `BLUETOOTH_HCI_SOCKET_UART_PORT=/dev/tty.usbmodem0006837533091 node examples/peripheral-explorer.js b8:27:eb:83:9b:19`
+
 ### Linux
 
  * Bluetooth 4.0 Adapter
