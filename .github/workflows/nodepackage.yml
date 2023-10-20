@@ -7,35 +7,40 @@ on:
   push:
     branches:
       - master
-
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  prebuild:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2019]
-        node_version: [12, 14, 16, 18]
+        include:
+          - name: darwin
+            os: macos-11
+            node: x64
+          - name: linux
+            os: ubuntu-latest
+          - name: win32
+            os: windows-2019
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - if: matrix.node
+        uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node_version }}
-      - name: Install dependencies
-        if: startsWith(runner.OS, 'windows') == false
+          node_version: [12, 14, 16, 18]
+          architecture: ${{ matrix.node }}
+      - uses: actions/checkout@v3
+      - name: Install dependencies (ubuntu-latest)
+        # Use g++-9 only on versions after 'ubuntu-18.04'
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
           sudo apt -qq update
-          sudo apt install -y libudev-dev
-      - name: Build Linux
-        if: startsWith(runner.OS, 'windows') == false
-        run: |
-          export PATH=./node_modules/.bin:${PATH}
-          npm install --build-from-source --node-gyp=$(which pangyp)
-          ./node_modules/.bin/node-pre-gyp package
-      - name: Build Windows
-        if: startsWith(runner.OS, 'windows') == true
-        run: |
-          npm install -g node-gyp
-          npm install --build-from-source
-          ./node_modules/.bin/node-pre-gyp package
-      - name: Test
-        run: npm test
+          sudo apt install -y g++-9
+          export CC="g++-9"
+      - run: npm install --ignore-scripts
+      - run: npm run prebuild-${{ matrix.name }}
+      - run: tar -zcvf ${{ matrix.name }}.tar.gz -C prebuilds .
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }}
+          path: ${{ matrix.name }}.tar.gz
+          retention-days: 1
