@@ -4,28 +4,38 @@
 name: Node.js CI
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
-    branches: [ master ]
+    branches:
+      - master
+  push:
+    branches:
+      - master
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x, 16,x, 18.x]
-
+        os: [ubuntu-20.04, ubuntu-latest, macos-latest, windows-2019]
+        node: [12, 14, 16, 18, 20]
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
-      env:
-        CI: true
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Install dependencies (ubuntu-latest)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
+          sudo apt -qq update
+          sudo apt install -y g++-9
+          export CC="g++-9"
+      - name: Install NPM packages
+        run: |
+          npm ci
+      - name: Run tests
+        run: |
+          npm test
+      - name: Lint
+        run: |
+          npm run lint
