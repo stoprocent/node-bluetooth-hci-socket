@@ -1,6 +1,6 @@
 {
   "name": "@stoprocent/bluetooth-hci-socket",
-  "version": "0.6.0",
+  "version": "0.6.7",
   "description": "Bluetooth HCI socket binding for Node.js",
   "main": "index.js",
   "types": "index.d.ts",
@@ -38,6 +38,7 @@
     "usb": "^1.9.2"
   },
   "devDependencies": {
+    "@semantic-release/exec": "6.0.3",
     "async": "^3.2.4",
     "eslint": "^8.31.0",
     "eslint-config-semistandard": "^17.0.0",
@@ -64,5 +65,8 @@
   },
   "jshintConfig": {
     "esversion": 6
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
