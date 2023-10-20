@@ -3,7 +3,8 @@ on:
   push:
     branches:
       - master
-      - beta
+      - develop
+      - npm
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false

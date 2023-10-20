@@ -7,9 +7,11 @@ on:
   pull_request:
     branches:
       - master
+      - npm
   push:
     branches:
       - master
+      - npm
 
 jobs:
   build:
