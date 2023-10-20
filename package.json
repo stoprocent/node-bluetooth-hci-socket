@@ -1,6 +1,6 @@
 {
   "name": "@stoprocent/bluetooth-hci-socket",
-  "version": "0.6.0",
+  "version": "0.6.4",
   "description": "Bluetooth HCI socket binding for Node.js",
   "main": "index.js",
   "types": "index.d.ts",
@@ -37,7 +37,7 @@
   "optionalDependencies": {
     "usb": "^1.9.2"
   },
-  "devDependencies": {    
+  "devDependencies": {
     "prebuildify": "^5.0.1",
     "prebuildify-ci": "^1.0.5",
     "jshint": "^2.13.6"
