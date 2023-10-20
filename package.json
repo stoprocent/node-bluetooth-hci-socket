@@ -39,6 +39,12 @@
   },
   "devDependencies": {
     "async": "^3.2.4",
+    "eslint": "^8.31.0",
+    "eslint-config-semistandard": "^17.0.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.6.0",
+    "eslint-plugin-promise": "^6.1.1",
     "jshint": "^2.13.6",
     "node-gyp": "^9.4.0",
     "prebuildify": "^5.0.1",

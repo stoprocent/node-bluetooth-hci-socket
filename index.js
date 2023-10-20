@@ -1,6 +1,5 @@
-var os = require('os');
-
-var platform = os.platform();
+const os = require('os');
+const platform = os.platform();
 
 if (process.env.BLUETOOTH_HCI_SOCKET_UART_PORT) {
   module.exports = require('./lib/uart.js');
