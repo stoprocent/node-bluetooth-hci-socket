@@ -1,12 +1,12 @@
 {
-  "name": "@abandonware/bluetooth-hci-socket",
+  "name": "@stoprocent/bluetooth-hci-socket",
   "version": "0.6.0",
   "description": "Bluetooth HCI socket binding for Node.js",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": {
     "type": "git",
-    "url": "https://github.com/abandonware/node-bluetooth-hci-socket.git"
+    "url": "https://github.com/stoprocent/node-bluetooth-hci-socket.git"
   },
   "keywords": [
     "HCI",
@@ -17,9 +17,9 @@
   "author": "Sandeep Mistry <sandeep.mistry@gmail.com>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/abandonware/node-bluetooth-hci-socket/issues"
+    "url": "https://github.com/stoprocent/node-bluetooth-hci-socket/issues"
   },
-  "homepage": "https://github.com/abandonware/node-bluetooth-hci-socket",
+  "homepage": "https://github.com/stoprocent/node-bluetooth-hci-socket",
   "os": [
     "linux",
     "android",
