@@ -22,6 +22,10 @@ interface BindParams {
         pid: number;
         bus?: number;
         address?: number;
+    },
+    uart: {
+        port: string, 
+        baudRate: number
     }
 }
 

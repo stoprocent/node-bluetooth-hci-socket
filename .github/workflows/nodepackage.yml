@@ -1,40 +1,77 @@
-name: Node.js package
-
+name: Build
 on:
-  pull_request:
-    branches:
-      - master
   push:
     branches:
       - master
-
+      - beta
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  prebuild:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2019]
-        node_version: [12, 14, 16, 18]
+        include:
+          - name: darwin
+            os: macos-11  
+            node: x64
+            command: prebuildify
+            args: --arch x64+arm64 --target 18.0.0
+          - name: win32-x86
+            os: windows-2019
+            node: x86
+            command: prebuildify
+            args: --target 14.0.0
+          - name: win32-x64
+            os: windows-2019
+            node: x64
+            command: prebuildify
+            args: --target 14.0.0
+          - name: linux-x64
+            os: ubuntu-latest
+            command: prebuildify-cross
+            args: -i centos7-devtoolset7 -i alpine
+          - name: linux-arm
+            os: ubuntu-latest
+            command: prebuildify-cross
+            args: -i linux-arm64-lts -i linux-armv7 -i linux-armv6
+          - name: android-arm
+            os: ubuntu-latest
+            command: prebuildify-cross
+            args: -i android-arm64 -i android-armv7
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    steps:
+      - if: matrix.node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+          architecture: ${{ matrix.node }}
+      - uses: actions/checkout@v3
+      - run: npm ci
+      - run: npm run ${{ matrix.command }} -- ${{ matrix.args }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: prebuilds/
+          if-no-files-found: error
+      - if: failure()
+        run: npx shx ls -lA
+  release:
+    needs: prebuild
+    name: Release
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: build-artifacts
+          path: prebuilds
       - uses: actions/setup-node@v3
         with:
-          node-version: ${{ matrix.node_version }}
-      - name: Install dependencies
-        if: startsWith(runner.OS, 'windows') == false
-        run: |
-          sudo apt -qq update
-          sudo apt install -y libudev-dev
-      - name: Build Linux
-        if: startsWith(runner.OS, 'windows') == false
-        run: |
-          export PATH=./node_modules/.bin:${PATH}
-          npm install --build-from-source --node-gyp=$(which pangyp)
-          ./node_modules/.bin/node-pre-gyp package
-      - name: Build Windows
-        if: startsWith(runner.OS, 'windows') == true
-        run: |
-          npm install --build-from-source
-          ./node_modules/.bin/node-pre-gyp package
-      - name: Test
-        run: npm test
+          node-version: 18.x
+      - run: npm ci
+      - run: npm run semantic-release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
