@@ -35,6 +35,7 @@
     "nan": "^2.17.0",
     "node-addon-api": "^4.3.0",
     "node-gyp-build": "^4.5.0",
+    "async": "^3.2.4",
     "serialport": "^12.0.0"
   },
   "optionalDependencies": {
@@ -42,7 +43,6 @@
   },
   "devDependencies": {
     "@semantic-release/exec": "6.0.3",
-    "async": "^3.2.4",
     "eslint": "^8.31.0",
     "eslint-config-semistandard": "^17.0.0",
     "eslint-config-standard": "^17.0.0",
