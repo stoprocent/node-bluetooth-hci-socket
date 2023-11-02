@@ -1,4 +1,4 @@
-# ESP32-WROOM-32
+# NRF52840
 
 ![NRF52840DK](nrf52-dk.jpg)
 
@@ -7,6 +7,8 @@ You can use precompiled `NRF52840` application included in this directory to fla
 ``` bash
 $ nrfjprog -f NRF52 --program misc/nrf52840/nrf52840-hci-uart-app.hex –-chiperase --reset
 ```
+
+After flashing it through the USB (shorter edge) you have to plug the cable to the other USB (long edge) and you should see the USB device name same as `CONFIG_USB_DEVICE_PRODUCT` variable.
 
 **Enviromental Variables**
 ``` bash
