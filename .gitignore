@@ -30,3 +30,4 @@ node_modules
 # VScode
 .vscode
 prebuilds
+.DS_Store
