@@ -219,6 +219,6 @@ console.log('isDevUp = ' + bluetoothHciSocket.isDevUp());
 
 setAdvertiseEnable(false);
 setAdvertisingParameter();
-setScanResponseData(Buffer.alloc('0909657374696d6f74650e160a182eb8855fb5ddb601000200', 'hex'));
-setAdvertisingData(Buffer.alloc('0201061aff4c000215b9407f30f5f8466eaff925556b57fe6d00010002b6', 'hex'));
+setScanResponseData(Buffer.from('0909657374696d6f74650e160a182eb8855fb5ddb601000200', 'hex'));
+setAdvertisingData(Buffer.from('0201061aff4c000215b9407f30f5f8466eaff925556b57fe6d00010002b6', 'hex'));
 setAdvertiseEnable(true);

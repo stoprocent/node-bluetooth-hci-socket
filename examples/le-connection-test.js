@@ -54,7 +54,7 @@ bluetoothHciSocket.on('data', function (data) {
         console.log('\t' + latency);
         console.log('\t' + supervisionTimeout * 10);
 
-        writeHandle(handle, Buffer.alloc('020001', 'hex'));
+        writeHandle(handle, Buffer.from('020001', 'hex'));
       }
     }
   } else if (data.readUInt8(0) === HCI_ACLDATA_PKT) {
@@ -143,7 +143,7 @@ function createConnection (address, addressType) {
   cmd.writeUInt8(0x00, 8); // initiator filter
 
   cmd.writeUInt8(addressType === 'random' ? 0x01 : 0x00, 9); // peer address type
-  (Buffer.alloc(address.split(':').reverse().join(''), 'hex')).copy(cmd, 10); // peer address
+  (Buffer.from(address.split(':').reverse().join(''), 'hex')).copy(cmd, 10); // peer address
 
   cmd.writeUInt8(0x00, 16); // own address type
 
