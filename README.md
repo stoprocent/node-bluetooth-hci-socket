@@ -9,9 +9,9 @@ https://GitHub.com/abandonware/node-bluetooth-hci-socket/network/
 https://img.shields.io/badge/license-MIT-0.svg
 )](MIT)
 [![NPM](
-https://img.shields.io/npm/v/@abandonware/bluetooth-hci-socket.svg
+https://img.shields.io/npm/v/@stoprocent/bluetooth-hci-socket.svg
 )](
-https://www.npmjs.com/package/@abandonware/bluetooth-hci-socket
+https://www.npmjs.com/package/@stoprocent/bluetooth-hci-socket
 )
 [![Fediverse](
 https://img.shields.io/mastodon/follow/279303?domain=https%3A%2F%2Fmastodon.social&style=social#rzr
@@ -88,13 +88,13 @@ Note:
 ## Install
 
 ```sh
-npm install @abandonware/bluetooth-hci-socket
+npm install @stoprocent/bluetooth-hci-socket
 ```
 
 ## Usage
 
 ```javascript
-var BluetoothHciSocket = require('@abandonware/bluetooth-hci-socket');
+var BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
 ```
 
 ### Actions
