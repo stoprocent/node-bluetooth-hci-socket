@@ -146,7 +146,7 @@ function setAdvertisingParameter () {
   cmd.writeUInt8(0x00, 8); // adv type
   cmd.writeUInt8(0x00, 9); // own addr typ
   cmd.writeUInt8(0x00, 10); // direct addr type
-  (Buffer.alloc('000000000000', 'hex')).copy(cmd, 11); // direct addr
+  (Buffer.from('000000000000', 'hex')).copy(cmd, 11); // direct addr
   cmd.writeUInt8(0x07, 17);
   cmd.writeUInt8(0x00, 18);
 
