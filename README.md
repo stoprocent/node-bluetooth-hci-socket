@@ -1,9 +1,9 @@
 # node-bluetooth-hci-socket
 
 [![GitHub forks](
-https://img.shields.io/github/forks/abandonware/node-bluetooth-hci-socket.svg?style=social&label=Fork&maxAge=2592000
+https://img.shields.io/github/forks/stoprocent/node-bluetooth-hci-socket.svg?style=social&label=Fork&maxAge=2592000
 )](
-https://GitHub.com/abandonware/node-bluetooth-hci-socket/network/
+https://GitHub.com/stoprocent/node-bluetooth-hci-socket/network/
 )
 [![license](
 https://img.shields.io/badge/license-MIT-0.svg
@@ -26,7 +26,7 @@ https://kiwiirc.com/client/irc.libera.chat/#iot
 
 Bluetooth HCI socket binding for Node.js
 
-__NOTE:__ Currently only supports __Linux__, __FreeBSD__ and __Windows__.
+__NOTE:__ Currently only supports __Linux__, __FreeBSD__, __Windows__ or any operating systems when using HCI over uart.
 
 ## Prerequisites
 
@@ -200,7 +200,7 @@ bluetoothHciSocket.on('error', function(error) {
 
 ## Examples
 
-See [examples folder](https://github.com/abandonware/node-bluetooth-hci-socket/blob/master/examples) for code examples.
+See [examples folder](https://github.com/stoprocent/node-bluetooth-hci-socket/blob/master/examples) for code examples.
 
 ## Platform Notes
 

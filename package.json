@@ -31,36 +31,42 @@
     "darwin"
   ],
   "dependencies": {
-    "debug": "^4.3.4",
-    "nan": "^2.17.0",
-    "node-addon-api": "^4.3.0",
-    "node-gyp-build": "^4.6.1",
-    "async": "^3.2.4",
-    "serialport": "^12.0.0"
+    "debug": "^4.3.7",
+    "node-addon-api": "^8.1.0",
+    "node-gyp-build": "^4.8.2",
+    "async": "^3.2.6",
+    "serialport": "^12.0.0",
+    "patch-package": "^8.0.0"
   },
   "optionalDependencies": {
-    "usb": "^1.9.2"
+    "usb": "^2.14.0"
   },
   "devDependencies": {
-    "@semantic-release/exec": "6.0.3",
-    "eslint": "^8.31.0",
-    "eslint-config-semistandard": "^17.0.0",
-    "eslint-config-standard": "^17.0.0",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-n": "^15.6.0",
-    "eslint-plugin-promise": "^6.1.1",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/exec": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^10.1.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-import": "^2.30.0",
+    "eslint-plugin-n": "^17.10.3",
+    "eslint-plugin-promise": "^7.1.0",
+    "mocha": "^10.7.0",
+    "nyc": "^17.0.0",
+    "prebuildify": "^6.0.1",
+    "prebuildify-cross": "^5.1.0",
+    "semantic-release": "^24.1.1",
     "jshint": "^2.13.6",
-    "node-gyp": "^10.0.0",
-    "prebuildify": "^5.0.1",
-    "prebuildify-cross": "5.0.0",
-    "semantic-release": "21.1.0"
+    "node-gyp": "^10.2.0"
   },
   "scripts": {
     "install": "node-gyp-build",
+    "postinstall": "patch-package",
     "lint": "eslint \"**/*.js\"",
     "lint-fix": "eslint \"**/*.js\" --fix",
-    "prebuildify": "prebuildify --napi --target 14.0.0 --force --strip --verbose",
-    "prebuildify-cross": "prebuildify-cross --napi --target 14.0.0 --force --strip --verbose",
+    "prebuildify": "prebuildify --napi --target 16.0.0 --force --strip --verbose",
+    "prebuildify-cross": "prebuildify-cross --napi --target 16.0.0 --force --strip --verbose",
     "semantic-release": "semantic-release",
     "pretest": "npm run rebuild",
     "rebuild": "node-gyp rebuild",
