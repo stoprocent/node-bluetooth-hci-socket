@@ -33,6 +33,3 @@ jobs:
     - run: npm ci
     - run: npm run rebuild
     - run: npm test
-    - uses: codecov/codecov-action@v4
-      with:
-        directory: ./coverage/
