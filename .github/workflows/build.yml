@@ -1,9 +1,7 @@
 name: Build
 on:
   push:
-    branches:
-      - main
-      - beta
+  pull_request:
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false
@@ -40,6 +38,8 @@ jobs:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
+      - if: matrix.os == 'macos-12'
+        run: sudo -H pip install setuptools
       - if: matrix.node
         uses: actions/setup-node@v4
         with:
@@ -60,6 +60,7 @@ jobs:
     needs: prebuild
     name: Release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
