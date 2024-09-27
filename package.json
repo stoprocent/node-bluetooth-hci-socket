@@ -61,11 +61,10 @@
   },
   "scripts": {
     "install": "node-gyp-build",
-    "postinstall": "patch-package",
     "lint": "eslint \"**/*.js\"",
     "lint-fix": "eslint \"**/*.js\" --fix",
     "prebuildify": "prebuildify --napi --target 17.0.0 --force --strip --verbose",
-    "prebuildify-cross": "prebuildify-cross --napi --target 17.0.0 --force --strip --verbose",
+    "prebuildify-cross": "patch-package && prebuildify-cross --napi --target 17.0.0 --force --strip --verbose",
     "semantic-release": "semantic-release",
     "pretest": "npm run rebuild",
     "rebuild": "node-gyp rebuild",
