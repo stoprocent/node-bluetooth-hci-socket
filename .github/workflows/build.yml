@@ -1,9 +1,7 @@
 name: Build
 on:
   push:
-    branches:
-      - main
-      - beta
+  pull_request:
 concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: false
@@ -60,6 +58,7 @@ jobs:
     needs: prebuild
     name: Release
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
