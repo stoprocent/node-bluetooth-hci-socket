@@ -26,15 +26,15 @@ jobs:
           - name: linux-x64
             os: ubuntu-latest
             command: prebuildify-cross
-            args: -i centos7-devtoolset7 -i alpine
+            args:  --openssl_fips='' -i centos7-devtoolset7 -i alpine
           - name: linux-arm
             os: ubuntu-latest
             command: prebuildify-cross
-            args: -i linux-arm64-lts -i linux-armv7 -i linux-armv6
+            args:  --openssl_fips='' -i linux-arm64-lts -i linux-armv7 -i linux-armv6
           - name: android-arm
             os: ubuntu-latest
             command: prebuildify-cross
-            args: -i android-arm64 -i android-armv7
+            args:  --openssl_fips='' -i android-arm64 -i android-armv7
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     steps:
