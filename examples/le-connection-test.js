@@ -67,7 +67,7 @@ bluetoothHciSocket.on('data', function (data) {
       console.log('\t' + handle);
       console.log('\t' + result.toString('hex'));
 
-      disconnectConnection(handle, HCI_OE_USER_ENDED_CONNECTION);
+      //disconnectConnection(handle, HCI_OE_USER_ENDED_CONNECTION);
     }
   }
 });
@@ -189,4 +189,4 @@ function disconnectConnection (handle, reason) {
   bluetoothHciSocket.write(cmd);
 }
 
-createConnection('dc:0b:86:95:e8:a5', 'random');
+createConnection('fc:d1:75:16:7b:fc', 'random');

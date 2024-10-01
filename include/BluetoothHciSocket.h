@@ -132,7 +132,7 @@ class BluetoothHciSocket : public Napi::ObjectWrap<BluetoothHciSocket> {
    * @param data Pointer to the data buffer.
    * @return Result code.
    */
-  int kernelDisconnectWorkArounds(int length, char* data);
+  void kernelDisconnectWorkArounds(char* data, int length);
 
   /**
    * @brief Workaround for kernel connect issues.
@@ -168,6 +168,7 @@ class BluetoothHciSocket : public Napi::ObjectWrap<BluetoothHciSocket> {
   uint8_t _addressType;       ///< Address type (public or random)
 
   // Maps to manage connected and connecting L2CAP sockets
+  std::mutex _mapMutex;
   std::map<bdaddr_t, std::weak_ptr<BluetoothHciL2Socket>> _l2sockets_connected;    ///< Connected L2CAP sockets
   std::map<bdaddr_t, std::shared_ptr<BluetoothHciL2Socket>> _l2sockets_connecting; ///< Connecting L2CAP sockets
   std::map<uint16_t, std::shared_ptr<BluetoothHciL2Socket>> _l2sockets_handles;    ///< L2CAP sockets by handle

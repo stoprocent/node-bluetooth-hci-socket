@@ -14,7 +14,7 @@ BluetoothHciL2Socket::BluetoothHciL2Socket(BluetoothHciSocket* parent,
                                            const bdaddr_t* bdaddr_dst,
                                            uint8_t dst_type,
                                            uint64_t expires)
-    : _parent(parent), _expires(expires), _socket(-1)
+    : _socket(-1), _parent(parent), _expires(expires)
 {
     uint16_t l2cid;
 
@@ -40,9 +40,6 @@ BluetoothHciL2Socket::BluetoothHciL2Socket(BluetoothHciSocket* parent,
     _l2_dst.l2_cid = l2cid;
     memcpy(&_l2_dst.l2_bdaddr, bdaddr_dst, sizeof(bdaddr_t));
     _l2_dst.l2_bdaddr_type = dst_type; // BDADDR_LE_PUBLIC (0x01), BDADDR_LE_RANDOM (0x02)
-
-    // Attempt to connect
-    this->connect();
 }
 
 BluetoothHciL2Socket::~BluetoothHciL2Socket() {
@@ -53,12 +50,12 @@ BluetoothHciL2Socket::~BluetoothHciL2Socket() {
 }
 
 void BluetoothHciL2Socket::connect() {
-  _socket = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-  if(_socket < 0) return;
+  this->_socket = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
+  if(this->_socket < 0) return;
 
-  if (bind(_socket, (struct sockaddr*)&_l2_src, sizeof(_l2_src)) < 0) {
-    close(_socket);
-    _socket = -1;
+  if (bind(this->_socket, (struct sockaddr*)&_l2_src, sizeof(_l2_src)) < 0) {
+    close(this->_socket);
+    this->_socket = -1;
     return;
   }
 

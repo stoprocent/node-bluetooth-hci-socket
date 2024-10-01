@@ -29,6 +29,25 @@
 #define HCI_DEV_NONE  0xFFFF  ///< No HCI device
 #define HCI_MAX_DEV   16      ///< Maximum number of HCI devices
 
+// HCI Event Packet Type
+#define HCI_EVENT_PKT 0x04
+
+// HCI Event Codes
+#define HCI_EV_LE_META 0x3E
+#define HCI_EV_DISCONN_COMPLETE 0x05
+
+// HCI LE Meta Event Subevent Codes
+#define HCI_EV_LE_CONN_COMPLETE 0x01
+#define HCI_EV_LE_ENH_CONN_COMPLETE 0x0A
+
+// Status Codes
+#define HCI_SUCCESS 0x00
+
+// 
+#define HCI_COMMAND_PKT 0x01
+#define HCI_LE_CREATE_CONN 0x200D
+#define HCI_LE_EXT_CREATE_CONN 0x2043
+
 // L2CAP constants
 #define ATT_CID 4 ///< Attribute Protocol CID (Channel Identifier)
 
