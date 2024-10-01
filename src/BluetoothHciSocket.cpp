@@ -161,7 +161,8 @@ void BluetoothHciSocket::kernelDisconnectWorkArounds(char * data, int length) {
         // Connection Complete Event
         uint16_t handle = data[5] | (data[6] << 8);
         uint8_t role = static_cast<uint8_t> (data[7]);
-
+        (void)(role);
+        
         // Extract the Bluetooth address
         bdaddr_t bdaddr_dst = {};
         if (subEventCode == HCI_EV_LE_CONN_COMPLETE) {
