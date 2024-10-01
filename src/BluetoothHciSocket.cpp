@@ -45,7 +45,7 @@ void BluetoothHciSocket::PollSocket() {
         if (length > 0) {
             // Handle HCI_CHANNEL_RAW if necessary
             if (this->_mode == HCI_CHANNEL_RAW) {
-              this->kernelDisconnectWorkArounds(length, buffer);  // Perform any required workarounds
+              this->kernelDisconnectWorkArounds(buffer, length);  // Perform any required workarounds
             }
             
             if (thisObj.IsEmpty()) {
@@ -70,7 +70,7 @@ void BluetoothHciSocket::PollSocket() {
                 jsCallback.Call(this->thisObj.Value(), arguments);
             });
         } else if (length == 0) {
-            continue;
+          continue;
         } else if (stopFlag) {
           break;
         }
@@ -89,13 +89,32 @@ void BluetoothHciSocket::EmitError(const Napi::CallbackInfo& info, const char *s
   error.Set("syscall", Napi::String::New(env, syscall));
   error.Set("errno", Napi::Number::New(env, errno));
 
-  std::vector<napi_value> arguments = {
-      Napi::String::New(env, "error"),  // The event name
-      error.Value() // The error object
-  };
+  try {
+    // Get the value held by thisObj
+    Napi::Value value = info.This().As<Napi::Object>();
+    if (!value.IsObject()) {
+      throw std::runtime_error("this does not contain a valid object");
+    }
+    Napi::Object obj = value.As<Napi::Object>();
 
-  // Emit the error event with the error object
-  this->thisObj.Value().Get("emit").As<Napi::Function>().Call(this->thisObj.Value(), arguments);
+    // Get the emit function
+    Napi::Value emitVal = obj.Get("emit");
+    if (!emitVal.IsFunction()) {
+      throw std::runtime_error("emit is not a function");
+    }
+    Napi::Function emitFunc = emitVal.As < Napi::Function > ();
+
+    // Prepare arguments
+    std::vector<napi_value> arguments;
+    arguments.push_back(Napi::String::New(env, "error"));
+    arguments.push_back(error.Value());
+
+    // Call emit
+    emitFunc.Call(obj, arguments);
+  } catch (const std::exception & ex) {
+    Napi::Error::New(env, ex.what()).ThrowAsJavaScriptException();
+    return;
+  }
 }
 
 int BluetoothHciSocket::devIdFor(const int* pDevId, bool isUp) {
@@ -132,73 +151,98 @@ int BluetoothHciSocket::devIdFor(const int* pDevId, bool isUp) {
   return devId;
 }
 
-int BluetoothHciSocket::kernelDisconnectWorkArounds(int length, char* data) {
-  // HCI Event - LE Meta Event - LE Connection Complete => manually create L2CAP socket to force kernel to book keep
-  // this socket will be closed immediately.
-
-  // The if statement:
-  // data[0] = LE Meta Event (HCI_EVENT_PKT)
-  // data[1] = HCI_EV_LE_META
-  // data[2] = plen (0x13)
-  // data[3] = HCI_EV_LE_CONN_COMPLETE (0x01)
-  // data[4] = Status (0x00 = Success)
-  // data[5,6] = handle (little endian)
-  // data[7] = role (0x00 = Master)
-  // data[9,]  = device bt address
-  if (length == 22 && data[0] == 0x04 && data[1] == 0x3e && data[2] == 0x13 && data[3] == 0x01 && data[4] == 0x00) { //  && data[7] == 0x01
-    unsigned short handle = *((unsigned short*)(&data[5]));
-
-    std::shared_ptr<BluetoothHciL2Socket> l2socket_ptr;
-
-    auto it = _l2sockets_connected.find(*(bdaddr_t*)&data[9]);
-    if(it != _l2sockets_connected.end()){
-      l2socket_ptr = it->second.lock();
-    } else {
-      auto it2 = _l2sockets_connecting.find(*(bdaddr_t*)&data[9]);
-
-      if(it2 != _l2sockets_connecting.end()){
-        //successful connection (we have a handle for the socket!)
-        l2socket_ptr = it2->second;
-        l2socket_ptr->setExpires(0);
-        _l2sockets_connecting.erase(it2);
-      } else {
-
-        // Create bdaddr_t for source address
-        bdaddr_t bdaddr_src;
-        memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
-
-        // Create bdaddr_t for destination address
-        bdaddr_t bdaddr_dst;
-        memcpy(bdaddr_dst.b, &data[9], sizeof(bdaddr_dst.b));
-
-        // Correct the dst_type calculation if necessary
-        uint8_t dst_type = static_cast<uint8_t>(data[8] + 1);
-
-        // Now call the constructor with proper types
-        l2socket_ptr = std::make_shared<BluetoothHciL2Socket>(this, &bdaddr_src, _addressType, &bdaddr_dst, dst_type, static_cast<uint64_t>(0));
-
-        if(!l2socket_ptr->isConnected()){
-          return 0;
-        }
-        this->_l2sockets_connected[*(bdaddr_t*)&data[9]] = l2socket_ptr;
-      }
-    }
-
-    if(!l2socket_ptr->isConnected()){
-      return 0;
-    }
-    
-    handle = handle % 256;
-    this->_l2sockets_handles[handle] = l2socket_ptr;
-  } else if (length == 7 && data[0] == 0x04 && data[1] == 0x05 && data[2] == 0x04 && data[3] == 0x00) {
-    
-    // HCI Event - Disconn Complete =======================> close socket from above
-    unsigned short handle = *((unsigned short*)(&data[4]));
-    handle = handle % 256;
-    this->_l2sockets_handles.erase(handle);
+void BluetoothHciSocket::kernelDisconnectWorkArounds(char * data, int length) {
+  // Check if it's an HCI Event Packet
+  if (length < 4 || static_cast<uint8_t> (data[0]) != HCI_EVENT_PKT) {
+    // Not an HCI event packet; nothing to do
+    return;
   }
 
-  return 0;
+  // 
+  std::lock_guard<std::mutex> lock(_mapMutex);
+
+  uint8_t eventCode = static_cast<uint8_t> (data[1]);
+  uint8_t plen = static_cast<uint8_t> (data[2]);
+
+  if (eventCode == HCI_EV_LE_META) {
+    // Handle LE Meta Events
+    if (plen >= 3) {
+      uint8_t subEventCode = static_cast<uint8_t> (data[3]);
+      uint8_t status = static_cast<uint8_t> (data[4]);
+
+      if ((subEventCode == HCI_EV_LE_CONN_COMPLETE && plen >= 19 && status == HCI_SUCCESS) ||
+        (subEventCode == HCI_EV_LE_ENH_CONN_COMPLETE && plen >= 31 && status == HCI_SUCCESS)) {
+        // Connection Complete Event
+        uint16_t handle = data[5] | (data[6] << 8);
+        uint8_t role = static_cast<uint8_t> (data[7]);
+        (void)(role);
+        
+        // Extract the Bluetooth address
+        bdaddr_t bdaddr_dst = {};
+        if (subEventCode == HCI_EV_LE_CONN_COMPLETE) {
+          memcpy(bdaddr_dst.b, & data[9], sizeof(bdaddr_dst.b));
+        } else if (subEventCode == HCI_EV_LE_ENH_CONN_COMPLETE) {
+          memcpy(bdaddr_dst.b, & data[9], sizeof(bdaddr_dst.b));
+        }
+
+        // Process the connection
+        std::shared_ptr<BluetoothHciL2Socket> l2socket_ptr;
+        auto it_connected = _l2sockets_connected.find(bdaddr_dst);
+        if (it_connected != _l2sockets_connected.end()) {
+          l2socket_ptr = it_connected->second.lock();
+        } else {
+          auto it_connecting = _l2sockets_connecting.find(bdaddr_dst);
+          if (it_connecting != _l2sockets_connecting.end()) {
+            // Successful connection (we have a handle for the socket)
+            l2socket_ptr = it_connecting->second;
+            l2socket_ptr->setExpires(0);
+            _l2sockets_connecting.erase(it_connecting);
+
+            // Move to connected sockets map
+            _l2sockets_connected[bdaddr_dst] = std::weak_ptr<BluetoothHciL2Socket> (l2socket_ptr);
+          } else {
+            // Create bdaddr_t for source address
+            bdaddr_t bdaddr_src = {};
+            memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
+
+            // Correct the dst_type calculation
+            uint8_t dst_type = static_cast<uint8_t> (data[8] + 1);
+
+            // Create a new L2CAP socket and connect
+            l2socket_ptr = std::make_shared<BluetoothHciL2Socket> (
+              this, & bdaddr_src, _addressType, & bdaddr_dst, dst_type, 0);
+
+            l2socket_ptr->connect();
+
+            if (!l2socket_ptr->isConnected()) {
+              return;
+            }
+
+            // Add to connected sockets map
+            _l2sockets_connected[bdaddr_dst] = std::weak_ptr<BluetoothHciL2Socket> (l2socket_ptr);
+          }
+        }
+
+        if (!l2socket_ptr || !l2socket_ptr->isConnected()) {
+          return;
+        }
+
+        // Map the handle to the L2CAP socket
+        handle = handle % 256;
+        _l2sockets_handles[handle] = l2socket_ptr;
+      }
+    }
+  } else if (eventCode == HCI_EV_DISCONN_COMPLETE && plen >= 4) {
+    uint8_t status = static_cast<uint8_t> (data[3]);
+    if (status == HCI_SUCCESS) {
+      // Disconnection Complete Event
+      uint16_t handle = data[4] | (data[5] << 8);
+      handle = handle % 256;
+
+      // Remove the socket associated with the handle
+      _l2sockets_handles.erase(handle);
+    }
+  }
 }
 
 void BluetoothHciSocket::setConnectionParameters(
@@ -207,82 +251,128 @@ void BluetoothHciSocket::setConnectionParameters(
     unsigned short connLatency,
     unsigned short supervisionTimeout
 ){
-    char command[128];
+  char command[128];
 
-    // override the HCI devices connection parameters using debugfs
-    sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_min_interval", connMinInterval, this->_devId);
-    system(command);
-    sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_max_interval", connMaxInterval, this->_devId);
-    system(command);
-    sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_latency", connLatency, this->_devId);
-    system(command);
-    sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/supervision_timeout", supervisionTimeout, this->_devId);
-    system(command);
+  // override the HCI devices connection parameters using debugfs
+  sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_min_interval", connMinInterval, this->_devId);
+  system(command);
+  sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_max_interval", connMaxInterval, this->_devId);
+  system(command);
+  sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/conn_latency", connLatency, this->_devId);
+  system(command);
+  sprintf(command, "echo %u > /sys/kernel/debug/bluetooth/hci%d/supervision_timeout", supervisionTimeout, this->_devId);
+  system(command);
 }
 
-bool BluetoothHciSocket::kernelConnectWorkArounds(char* data, int length)
-{
-  // if statement:
-  // data[0]: HCI_COMMAND_PKT
-  // data[1,2]: HCI_OP_LE_CREATE_CONN (0x200d)
-  // data[3]: plen
-  // data[10 ...] bdaddr
+bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
+  // Check if the packet is an HCI command packet
+  if (length < 4 || data[0] != HCI_COMMAND_PKT) {
+    // Not an HCI command packet; nothing to do
+    return false;
+  }
 
-  if (length == 29 && data[0] == 0x01 && data[1] == 0x0d && data[2] == 0x20 && data[3] == 0x19) {
-    unsigned short connMinInterval;
-    unsigned short connMaxInterval;
-    unsigned short connLatency;
-    unsigned short supervisionTimeout;
+  //
+  std::lock_guard<std::mutex> lock(_mapMutex);
 
-    // extract the connection parameter
-    connMinInterval = (data[18] << 8) | data[17];
-    connMaxInterval = (data[20] << 8) | data[19];
-    connLatency = (data[22] << 8) | data[21];
-    supervisionTimeout = (data[24] << 8) | data[23];
+  // Extract the opcode and parameter length
+  uint16_t opcode = data[1] | (data[2] << 8);
+  uint8_t plen = data[3];
 
+  // Variables to hold connection parameters
+  uint16_t connMinInterval = 0;
+  uint16_t connMaxInterval = 0;
+  uint16_t connLatency = 0;
+  uint16_t supervisionTimeout = 0;
+  bdaddr_t bdaddr_dst = {};
+  uint8_t dst_type = 0;
+  bool handled = false;
+
+  // Parse the command based on the opcode
+  if (opcode == HCI_LE_CREATE_CONN && plen == 0x19) {
+    // LE Create Connection command
+    // Extract bdaddr and address type
+    memcpy(bdaddr_dst.b, & data[10], sizeof(bdaddr_dst.b));
+    dst_type = static_cast<uint8_t> (data[9] + 1);
+
+    // Extract connection parameters
+    connMinInterval = data[17] | (data[18] << 8);
+    connMaxInterval = data[19] | (data[20] << 8);
+    connLatency = data[21] | (data[22] << 8);
+    supervisionTimeout = data[23] | (data[24] << 8);
+
+    handled = true;
+  } else if (opcode == HCI_LE_EXT_CREATE_CONN) {
+    // LE Extended Create Connection command
+    // Ensure we have enough data
+    if (plen >= 0x2A && length >= plen + 4) {
+      // Extract bdaddr and address type
+      memcpy(bdaddr_dst.b, & data[7], sizeof(bdaddr_dst.b));
+      dst_type = static_cast<uint8_t> (data[6] + 1);
+
+      // Extract connection parameters
+      connMinInterval = data[18] | (data[19] << 8);
+      connMaxInterval = data[20] | (data[21] << 8);
+      connLatency = data[22] | (data[23] << 8);
+      supervisionTimeout = data[24] | (data[25] << 8);
+
+      handled = true;
+    }
+  }
+
+  if (handled) {
+    // Set the connection parameters
     this->setConnectionParameters(connMinInterval, connMaxInterval, connLatency, supervisionTimeout);
 
     std::shared_ptr<BluetoothHciL2Socket> l2socket_ptr;
-    if(this->_l2sockets_connected.find(*(bdaddr_t*)&data[10]) != this->_l2sockets_connected.end()){
-      // we are refreshing the connection (which was connected)
-      l2socket_ptr = this->_l2sockets_connected[*(bdaddr_t*)&data[10]].lock();
-      l2socket_ptr->disconnect();
-      l2socket_ptr->connect();
-      // no expiration as we will continue to be "connected" on the other handle which must exist
-    } else if(this->_l2sockets_connecting.find(*(bdaddr_t*)&data[10]) != this->_l2sockets_connecting.end()){
-      // we were connecting but now we connect again
-      l2socket_ptr = this->_l2sockets_connecting[*(bdaddr_t*)&data[10]];
-      l2socket_ptr->disconnect();
-      l2socket_ptr->connect();
-      l2socket_ptr->setExpires(uv_hrtime() + L2_CONNECT_TIMEOUT);
-    } else{    
-      // Create bdaddr_t for source address
-      bdaddr_t bdaddr_src;
-      memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
 
-      // Create bdaddr_t for destination address
-      bdaddr_t bdaddr_dst;
-      memcpy(bdaddr_dst.b, &data[10], sizeof(bdaddr_dst.b));
-
-      // Correct the dst_type calculation if necessary
-      uint8_t dst_type = static_cast<uint8_t>(data[9] + 1);
-      
-      // Expires
-      uint64_t expires = static_cast<uint64_t>(uv_hrtime() + L2_CONNECT_TIMEOUT);
-
-      // Now call the constructor with proper types
-      l2socket_ptr = std::make_shared<BluetoothHciL2Socket>(this, &bdaddr_src, _addressType, &bdaddr_dst, dst_type, expires);
-      if(!l2socket_ptr->isConnected()){
-        return false;
+    // Check if the device is already connected
+    auto it_connected = this->_l2sockets_connected.find(bdaddr_dst);
+    if (it_connected != this->_l2sockets_connected.end()) {
+      // Refresh the existing connection
+      l2socket_ptr = it_connected->second.lock();
+      if (l2socket_ptr) {
+        l2socket_ptr->disconnect();
+        l2socket_ptr->connect();
+        // No expiration needed as we're maintaining the connection
       }
-      this->_l2sockets_connecting[*(bdaddr_t*)&data[10]] = l2socket_ptr;
+    } else {
+      // Check if the device is currently connecting
+      auto it_connecting = this->_l2sockets_connecting.find(bdaddr_dst);
+      if (it_connecting != this->_l2sockets_connecting.end()) {
+        // Reattempt the connection
+        l2socket_ptr = it_connecting->second;
+        l2socket_ptr->disconnect();
+        l2socket_ptr->connect();
+        l2socket_ptr->setExpires(uv_hrtime() + L2_CONNECT_TIMEOUT);
+      } else {
+        // Create a new L2CAP socket and initiate connection
+        bdaddr_t bdaddr_src = {};
+        memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
+
+        uint64_t expires = uv_hrtime() + L2_CONNECT_TIMEOUT;
+
+        l2socket_ptr = std::make_shared<BluetoothHciL2Socket> (
+          this, & bdaddr_src, _addressType, & bdaddr_dst, dst_type, expires);
+
+        // Insert into the connecting sockets map
+        this->_l2sockets_connecting[bdaddr_dst] = l2socket_ptr;
+
+        // Attempt to connect
+        l2socket_ptr->connect();
+
+        // Check if connected successfully
+        if (!l2socket_ptr->isConnected()) {
+          this->_l2sockets_connecting.erase(bdaddr_dst);
+          return false;
+        }
+      }
     }
 
-    // returns true to skip sending the kernel this commoand
-    // the command will instead be sent by the connect() operation
+    // Skip sending the command to the kernel; handled by connect()
     return true;
   }
 
+  // Command not handled; proceed normally
   return false;
 }
 
@@ -527,7 +617,7 @@ void BluetoothHciSocket::Write(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::Cleanup(const Napi::CallbackInfo& info) {
-  Napi::Env env = info.Env();  // Get the current environment
+  Napi::Env env = info.Env();  // Get the current efnvironment
   Napi::HandleScope scope(env);  // Create a handle scope for memory management
 
   auto now = uv_hrtime();

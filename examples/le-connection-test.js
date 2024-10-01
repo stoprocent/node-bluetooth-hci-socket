@@ -189,4 +189,4 @@ function disconnectConnection (handle, reason) {
   bluetoothHciSocket.write(cmd);
 }
 
-createConnection('dc:0b:86:95:e8:a5', 'random');
+createConnection('fc:d1:75:16:7b:fc', 'random');
