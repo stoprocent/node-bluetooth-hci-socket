@@ -89,18 +89,32 @@ void BluetoothHciSocket::EmitError(const Napi::CallbackInfo& info, const char *s
   error.Set("syscall", Napi::String::New(env, syscall));
   error.Set("errno", Napi::Number::New(env, errno));
 
-  Napi::Value emitVal = this->thisObj.Value().Get("emit");
-  if (!emitVal.IsFunction()) {
-      Napi::TypeError::New(env, "emit is not a function").ThrowAsJavaScriptException();
-      return;
+  try {
+    // Get the value held by thisObj
+    Napi::Value value = info.This().As<Napi::Object>();
+    if (!value.IsObject()) {
+      throw std::runtime_error("this does not contain a valid object");
+    }
+    Napi::Object obj = value.As<Napi::Object>();
+
+    // Get the emit function
+    Napi::Value emitVal = obj.Get("emit");
+    if (!emitVal.IsFunction()) {
+      throw std::runtime_error("emit is not a function");
+    }
+    Napi::Function emitFunc = emitVal.As < Napi::Function > ();
+
+    // Prepare arguments
+    std::vector<napi_value> arguments;
+    arguments.push_back(Napi::String::New(env, "error"));
+    arguments.push_back(error.Value());
+
+    // Call emit
+    emitFunc.Call(obj, arguments);
+  } catch (const std::exception & ex) {
+    Napi::Error::New(env, ex.what()).ThrowAsJavaScriptException();
+    return;
   }
-  Napi::Function emitFunc = emitVal.As<Napi::Function>();
-
-  std::vector<napi_value> arguments;
-  arguments.push_back(Napi::String::New(env, "error"));
-  arguments.push_back(error.Value());
-
-  emitFunc.Call(this->thisObj.Value(), arguments);
 }
 
 int BluetoothHciSocket::devIdFor(const int* pDevId, bool isUp) {
@@ -530,8 +544,6 @@ Napi::Value BluetoothHciSocket::GetDeviceList(const Napi::CallbackInfo& info) {
 void BluetoothHciSocket::SetFilter(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
-
-  this->EmitError(info, "setsockopt");
 
   // Check if the first argument exists and is a buffer
   if (info.Length() > 0 && info[0].IsBuffer()) {
