@@ -13,7 +13,6 @@ https://img.shields.io/npm/v/@stoprocent/bluetooth-hci-socket.svg
 )](
 https://www.npmjs.com/package/@stoprocent/bluetooth-hci-socket
 )
-[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/stoprocent)
 
 Bluetooth HCI socket binding for Node.js
 
@@ -27,7 +26,21 @@ This fork of `node-bluetooth-hci-socket` exists to introduce several important i
    
 2. **Rewriting Native Code**: The C++ native binding code has been fully rewritten from **Nan** to **N-API**, ensuring long-term compatibility with modern versions of Node.js. Along with this, I have also resolved numerous issues that plagued the original code, improving both stability and performance.
 
-If you value these contributions and the ongoing maintenance of this project, please consider supporting my work. [![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/stoprocent)
+If you value these contributions and the ongoing maintenance of this project, please consider supporting my work. 
+
+[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/stoprocent)
+
+## Install
+
+```sh
+npm install @stoprocent/bluetooth-hci-socket
+```
+
+## Usage
+
+```javascript
+var BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
+```
 
 ## Prerequisites
 
@@ -85,18 +98,6 @@ Note:
 |:---- | :------ | :-------|
 | BCM2045A0 Bluetooth 4.1 | 0x0a5c | 0x6412 |
 | Marvell AVASTAR | 0x1286 | 0x204C |
-
-## Install
-
-```sh
-npm install @stoprocent/bluetooth-hci-socket
-```
-
-## Usage
-
-```javascript
-var BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
-```
 
 ### Actions
 
