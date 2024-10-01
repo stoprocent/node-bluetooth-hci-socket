@@ -13,20 +13,21 @@ https://img.shields.io/npm/v/@stoprocent/bluetooth-hci-socket.svg
 )](
 https://www.npmjs.com/package/@stoprocent/bluetooth-hci-socket
 )
-[![Fediverse](
-https://img.shields.io/mastodon/follow/279303?domain=https%3A%2F%2Fmastodon.social&style=social#rzr
-)](
-https://mastodon.social/@rzr/103886495590566533#bluetooth-hci-socket
-)
-[![IRC Channel](
-https://img.shields.io/badge/chat-on%20libera-brightgreen.svg
-)](
-https://kiwiirc.com/client/irc.libera.chat/#iot
-)
+[![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/stoprocent)
 
 Bluetooth HCI socket binding for Node.js
 
-__NOTE:__ Currently only supports __Linux__, __FreeBSD__, __Windows__ or any operating systems when using HCI over uart.
+__NOTE:__ Currently only supports __Linux__, __FreeBSD__, __Windows__ or **any operating systems when using HCI over uart**.
+
+## About This Fork
+
+This fork of `node-bluetooth-hci-socket` exists to introduce several important improvements and address compatibility issues across different operating systems. 
+
+1. **System-independent UART HCI driver**: I have introduced a driver that allows UART HCI dongles to be used seamlessly across any operating system, making the library much more flexible and portable.
+   
+2. **Rewriting Native Code**: The C++ native binding code has been fully rewritten from **Nan** to **N-API**, ensuring long-term compatibility with modern versions of Node.js. Along with this, I have also resolved numerous issues that plagued the original code, improving both stability and performance.
+
+If you value these contributions and the ongoing maintenance of this project, please consider supporting my work. [![Buy me a coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/stoprocent)
 
 ## Prerequisites
 
