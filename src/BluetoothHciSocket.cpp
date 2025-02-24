@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <uv.h>
+#include <stdexcept>
 
 #include "BluetoothHciSocket.h"
 
