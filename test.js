@@ -1,4 +1,4 @@
-const BluetoothHCISocket = require('.');
+const BluetoothHCISocket = require('.').default;
 
 // This test basically just makes sure we don't segfault at initialization time.
 try {

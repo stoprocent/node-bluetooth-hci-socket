@@ -1,4 +1,4 @@
-const BluetoothHciSocket = require('../index');
+const BluetoothHciSocket = require('../index').default;
 
 const bluetoothHciSocket = new BluetoothHciSocket();
 

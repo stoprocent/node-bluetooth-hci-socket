@@ -4,7 +4,9 @@
 /// <reference types="node" />
 
 interface Device {
-    devId: number | null;
+    /** Device ID (UART: port, USB: devId, Native: devId) */
+    devId: number | string | null;
+    /** Device is up */
     devUp: boolean | null;
     /** USB-IF vendor ID. */
     idVendor: number | null;
@@ -24,21 +26,21 @@ interface BindParams {
         address?: number;
     },
     uart: {
-        port: string, 
-        baudRate: number
+        baudRate: number;
+        retryConnection?: number;
     }
 }
 
 declare class BluetoothHciSocket extends NodeJS.EventEmitter {
-    getDeviceList(): Device[];
+    getDeviceList(): Promise<Device[]>;
     isDevUp(): boolean;
 
     start(): void;
     stop(): void;
     reset(): void;
 
-    bindRaw(devId: number, params?: BindParams): number;
-    bindUser(devId: number, params?: BindParams): number;
+    bindRaw(devId: number | string, params?: BindParams): number;
+    bindUser(devId: number | string, params?: BindParams): number;
     bindControl(): number;
 
     setFilter(filter: Buffer): void;
@@ -48,4 +50,11 @@ declare class BluetoothHciSocket extends NodeJS.EventEmitter {
     on(event: "error", cb: (error: NodeJS.ErrnoException) => void): this;
 }
 
-export = BluetoothHciSocket;
+type DriverType = 'uart' | 'usb' | 'native' | 'unsupported';
+
+declare const bluetooth: {
+    loadDriver: (driverType: DriverType) => BluetoothHciSocket;
+    default: BluetoothHciSocket;
+};
+
+export = bluetooth;
