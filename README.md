@@ -39,8 +39,38 @@ npm install @stoprocent/bluetooth-hci-socket
 ## Usage
 
 ```javascript
-var BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
+const hci = require('@stoprocent/bluetooth-hci-socket');
 ```
+
+There are two ways to use this module:
+
+### 1. Default (Automatic) Driver Selection
+
+```javascript
+const driver = hci.default;
+```
+
+This will automatically select the appropriate driver based on your platform and environment:
+- UART driver if UART port or force UART is configured
+- USB driver on Windows/FreeBSD or if force USB is configured
+- Native driver on Linux/Android
+- Unsupported driver for other platforms
+
+### 2. Explicit Driver Selection
+
+```javascript
+const hci = require('@stoprocent/bluetooth-hci-socket');
+
+// Choose specific driver
+const uartDriver = hci.loadDriver('uart');
+const usbDriver = hci.loadDriver('usb');
+const nativeDriver = hci.loadDriver('native');
+```
+
+Available driver types:
+- `'uart'` - UART/Serial driver (works on any OS)
+- `'usb'` - USB driver (Windows/FreeBSD)
+- `'native'` - Native driver (Linux/Android)
 
 ## Prerequisites
 
