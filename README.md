@@ -39,7 +39,7 @@ npm install @stoprocent/bluetooth-hci-socket
 ## Usage
 
 ```javascript
-const hci = require('@stoprocent/bluetooth-hci-socket');
+const BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
 ```
 
 There are two ways to use this module:
@@ -47,7 +47,7 @@ There are two ways to use this module:
 ### 1. Default (Automatic) Driver Selection
 
 ```javascript
-const driver = hci.default;
+const socket = new BluetoothHciSocket();
 ```
 
 This will automatically select the appropriate driver based on your platform and environment:
@@ -59,12 +59,17 @@ This will automatically select the appropriate driver based on your platform and
 ### 2. Explicit Driver Selection
 
 ```javascript
-const hci = require('@stoprocent/bluetooth-hci-socket');
+const { loadDriver } = require('@stoprocent/bluetooth-hci-socket');
 
 // Choose specific driver
-const uartDriver = hci.loadDriver('uart');
-const usbDriver = hci.loadDriver('usb');
-const nativeDriver = hci.loadDriver('native');
+const UartBluetoothHciSocket = loadDriver('uart');
+const socket = new UartBluetoothHciSocket();
+
+const UsbBluetoothHciSocket = loadDriver('usb');
+const socket = new UsbBluetoothHciSocket();
+
+const NativeBluetoothHciSocket = loadDriver('native');
+const socket = new NativeBluetoothHciSocket();
 ```
 
 Available driver types:

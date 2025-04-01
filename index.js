@@ -9,6 +9,8 @@ function loadDriver (driverType) {
       return require('./lib/usb.js');
     case 'native':
       return require('./lib/native.js');
+    case 'default':
+      return getDefaultDriver();
     default:
       return require('./lib/unsupported.js');
   }
@@ -27,7 +29,5 @@ function getDefaultDriver () {
   }
 }
 
-module.exports = {
-  loadDriver,
-  default: getDefaultDriver()
-};
+module.exports = loadDriver('default');
+module.exports.loadDriver = loadDriver;
