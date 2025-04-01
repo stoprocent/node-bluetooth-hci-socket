@@ -38,6 +38,15 @@ npm install @stoprocent/bluetooth-hci-socket
 
 ## Usage
 
+#### Typescript
+```typescript
+// Default - Auto-selected
+import BluetoothHciSocket from "@stoprocent/bluetooth-hci-socket";
+// ... or specific driver
+import { loadDriver } from "@stoprocent/bluetooth-hci-socket";
+```
+
+#### Javascript
 ```javascript
 const BluetoothHciSocket = require('@stoprocent/bluetooth-hci-socket');
 ```
@@ -53,11 +62,19 @@ const socket = new BluetoothHciSocket();
 This will automatically select the appropriate driver based on your platform and environment:
 - UART driver if UART port or force UART is configured
 - USB driver on Windows/FreeBSD or if force USB is configured
-- Native driver on Linux/Android
-- Unsupported driver for other platforms
+- Native HCI driver on Linux/Android
 
 ### 2. Explicit Driver Selection
 
+#### Typescript
+``` typescript
+import { loadDriver } from "@stoprocent/bluetooth-hci-socket";
+
+const BluetoothHciSocketUart = loadDriver('uart');
+const socket = new BluetoothHciSocketUart();
+```
+
+#### Javascript
 ```javascript
 const { loadDriver } = require('@stoprocent/bluetooth-hci-socket');
 
@@ -159,13 +176,13 @@ __Note:__ ```setFilter``` is not required if ```bindRaw``` is used.
 ##### Raw Channel
 
 ```javascript
-bluetoothHciSocket.bindRaw([deviceId]); // optional deviceId (integer)
+bluetoothHciSocket.bindRaw(deviceId); // optional deviceId (integer)
 ```
 
 ##### User Channel
 
 ```javascript
-bluetoothHciSocket.bindUser([deviceId]); // optional deviceId (integer)
+bluetoothHciSocket.bindUser(deviceId); // optional deviceId (integer)
 ```
 
 Requires the device to be in the powered down state (```sudo hciconfig hciX down```).
