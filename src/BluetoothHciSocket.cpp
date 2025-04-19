@@ -28,14 +28,14 @@ BluetoothHciSocket::BluetoothHciSocket(const Napi::CallbackInfo& info) :
 }
 
 BluetoothHciSocket::~BluetoothHciSocket() {
-  stopFlag = true;
-  if (pollingThread.joinable()) {
-      pollingThread.join();  // Wait for the polling thread to finish
+  if (!stopFlag && pollingThread.joinable()) {
+    stopFlag = true;
+    pollingThread.join();  // Wait for the polling thread to finishf
   }
-  if (tsfn != nullptr) {
-    tsfn.Release();
+  if (this->_socket >= 0) { 
+    close(this->_socket); 
+    this->_socket = -1; 
   }
-  close(this->_socket);
 }
 
 void BluetoothHciSocket::PollSocket() {
@@ -591,10 +591,9 @@ void BluetoothHciSocket::Start(const Napi::CallbackInfo& info) {
 void BluetoothHciSocket::Stop(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
-  
-  stopFlag = true;
-  if (pollingThread.joinable()) {
-      pollingThread.join();  // Wait for the polling thread to finish
+  if (!stopFlag && pollingThread.joinable()) {
+    stopFlag = true;
+    pollingThread.join();  // Wait for the polling thread to finishf
   }
 }
 
