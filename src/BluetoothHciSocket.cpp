@@ -16,16 +16,7 @@ BluetoothHciSocket::BluetoothHciSocket(const Napi::CallbackInfo& info) :
   _devId(0),
   _address(),
   _addressType(0)
-{
-  Napi::Env env = info.Env();
-  Napi::HandleScope scope(env);
-  int fd = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, BTPROTO_HCI);
-  if (fd == -1) {
-    Napi::Error::New(env, "socket creation failed").ThrowAsJavaScriptException();
-    return;
-  }
-  this->_socket = fd;
-}
+{}
 
 BluetoothHciSocket::~BluetoothHciSocket() {
   if (!stopFlag && pollingThread.joinable()) {
@@ -378,6 +369,10 @@ bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
 }
 
 Napi::Value BluetoothHciSocket::BindRaw(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return info.Env().Undefined();
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -427,6 +422,10 @@ Napi::Value BluetoothHciSocket::BindRaw(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value BluetoothHciSocket::BindUser(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return info.Env().Undefined();
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -464,6 +463,10 @@ Napi::Value BluetoothHciSocket::BindUser(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::BindControl(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return;
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -488,6 +491,10 @@ void BluetoothHciSocket::BindControl(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value BluetoothHciSocket::IsDevUp(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return Napi::Boolean::New(info.Env(), false);
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -505,6 +512,10 @@ Napi::Value BluetoothHciSocket::IsDevUp(const Napi::CallbackInfo& info) {
 }
 
 Napi::Value BluetoothHciSocket::GetDeviceList(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return Napi::Array::New(info.Env());
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -543,6 +554,10 @@ Napi::Value BluetoothHciSocket::GetDeviceList(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::SetFilter(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return;
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
 
@@ -568,6 +583,10 @@ void BluetoothHciSocket::SetFilter(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::Start(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return;
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
   // Store weak reference to the JS object (`info.This()`)
@@ -598,6 +617,10 @@ void BluetoothHciSocket::Stop(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::Write(const Napi::CallbackInfo& info) {
+  if (!this->EnsureSocket(info)) {
+    return;
+  }
+
   Napi::Env env = info.Env();  // Get the environment
   Napi::HandleScope scope(env);  // Create a scope for memory management
   
@@ -629,6 +652,24 @@ void BluetoothHciSocket::Cleanup(const Napi::CallbackInfo& info) {
       ++it;
     }
   }
+}
+
+bool BluetoothHciSocket::EnsureSocket(const Napi::CallbackInfo& info) {
+  if (this->_socket >= 0) {
+    return true;
+  }
+
+  Napi::Env env = info.Env();
+  Napi::HandleScope scope(env);
+  
+  int fd = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, BTPROTO_HCI);
+  if (fd == -1) {
+    this->EmitError(info, "socket creation failed");
+    return false;
+  }
+  
+  this->_socket = fd;
+  return true;
 }
 
 Napi::Object BluetoothHciSocket::Init(Napi::Env env, Napi::Object exports) {

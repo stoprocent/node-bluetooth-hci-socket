@@ -172,6 +172,13 @@ class BluetoothHciSocket : public Napi::ObjectWrap<BluetoothHciSocket> {
   std::map<bdaddr_t, std::weak_ptr<BluetoothHciL2Socket>> _l2sockets_connected;    ///< Connected L2CAP sockets
   std::map<bdaddr_t, std::shared_ptr<BluetoothHciL2Socket>> _l2sockets_connecting; ///< Connecting L2CAP sockets
   std::map<uint16_t, std::shared_ptr<BluetoothHciL2Socket>> _l2sockets_handles;    ///< L2CAP sockets by handle
+
+  /**
+   * @brief Ensures the socket is created.
+   * @param info Callback information from N-API.
+   * @return True if the socket is created, false otherwise.
+   */
+  bool EnsureSocket(const Napi::CallbackInfo& info);
 };
 
 #endif // BLUETOOTH_HCI_SOCKET_H
