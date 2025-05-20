@@ -35,7 +35,7 @@
     "node-addon-api": "^8.3.1",
     "node-gyp-build": "^4.8.4",
     "async": "^3.2.6",
-    "serialport": "^13.0.0",
+    "serialport": "^12.0.0",
     "patch-package": "^8.0.0"
   },
   "optionalDependencies": {
