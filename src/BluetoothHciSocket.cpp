@@ -3,7 +3,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <uv.h>
+#include <chrono>
 #include <stdexcept>
 
 #include "BluetoothHciSocket.h"
@@ -335,13 +335,13 @@ bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
         l2socket_ptr = it_connecting->second;
         l2socket_ptr->disconnect();
         l2socket_ptr->connect();
-        l2socket_ptr->setExpires(uv_hrtime() + L2_CONNECT_TIMEOUT);
+        l2socket_ptr->setExpires(std::chrono::high_resolution_clock::now().time_since_epoch().count() + L2_CONNECT_TIMEOUT);
       } else {
         // Create a new L2CAP socket and initiate connection
         bdaddr_t bdaddr_src = {};
         memcpy(bdaddr_src.b, _address, sizeof(bdaddr_src.b));
 
-        uint64_t expires = uv_hrtime() + L2_CONNECT_TIMEOUT;
+        uint64_t expires = std::chrono::high_resolution_clock::now().time_since_epoch().count() + L2_CONNECT_TIMEOUT;
 
         l2socket_ptr = std::make_shared<BluetoothHciL2Socket> (
           this, & bdaddr_src, _addressType, & bdaddr_dst, dst_type, expires);
@@ -643,7 +643,7 @@ void BluetoothHciSocket::Cleanup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();  // Get the current efnvironment
   Napi::HandleScope scope(env);  // Create a handle scope for memory management
 
-  auto now = uv_hrtime();
+  auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
   for (auto it = this->_l2sockets_connecting.cbegin(); it != this->_l2sockets_connecting.cend() /* not hoisted */; /* no increment */) {
     if (now < it->second->getExpires()) {

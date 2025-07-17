@@ -51,8 +51,8 @@
 // L2CAP constants
 #define ATT_CID 4 ///< Attribute Protocol CID (Channel Identifier)
 
-// 1 minute in nanoseconds
-#define L2_CONNECT_TIMEOUT 60000000000
+// 1 minute in nanoseconds (60 seconds * 1,000,000,000 nanoseconds)
+#define L2_CONNECT_TIMEOUT 60000000000ULL
 
 // HCI Device States Enumeration
 enum {
