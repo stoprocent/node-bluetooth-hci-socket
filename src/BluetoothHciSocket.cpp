@@ -672,6 +672,17 @@ bool BluetoothHciSocket::EnsureSocket(const Napi::CallbackInfo& info) {
     this->EmitError(info, "socket creation failed");
     return false;
   }
+
+  struct timeval tv = {};
+  
+  memset(&tv, 0, sizeof(tv));
+  tv.tv_sec = 1;
+  tv.tv_usec = 0;
+  
+  // Allow the poll thread to check the stop flag periodically even when no data is incoming
+  if (setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+    this->EmitError(info, "setsockopt failed for SO_RCVTIMEO");
+  }
   
   this->_socket = fd;
   return true;
