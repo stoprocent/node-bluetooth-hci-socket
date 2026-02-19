@@ -11,8 +11,7 @@ jobs:
       matrix:
         include:
           - name: darwin
-            os: macos-13
-            node: x64
+            os: macos-latest
             command: prebuildify
             args: --arch x64+arm64
           - name: win32-x86
