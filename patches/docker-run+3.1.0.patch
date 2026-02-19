@@ -7,7 +7,7 @@ index ea7fc0d..1f08702 100644
    if (!opts) opts = {}
  
 -  var request = docker(opts.host, {version:'v1.14'})
-+  var request = docker(opts.host, {version:'v1.24'})
++  var request = docker(opts.host, {version:'v1.44'})
    var that = new events.EventEmitter()
    var tty = !!opts.tty
  
