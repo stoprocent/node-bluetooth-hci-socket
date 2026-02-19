@@ -583,6 +583,11 @@ void BluetoothHciSocket::SetFilter(const Napi::CallbackInfo& info) {
 }
 
 void BluetoothHciSocket::Start(const Napi::CallbackInfo& info) {
+  if (!stopFlag && pollingThread.joinable()) {
+    stopFlag = true;
+    pollingThread.join();
+  }
+
   if (!this->EnsureSocket(info)) {
     return;
   }
