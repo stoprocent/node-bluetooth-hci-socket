@@ -15,11 +15,11 @@ jobs:
             command: prebuildify
             args: --arch x64+arm64
           - name: win32-x86
-            os: windows-2019
+            os: windows-latest
             node: x86
             command: prebuildify
           - name: win32-x64
-            os: windows-2019
+            os: windows-latest
             node: x64
             command: prebuildify
           - name: linux-x64
