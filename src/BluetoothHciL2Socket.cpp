@@ -1,4 +1,6 @@
 #include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -50,25 +52,55 @@ BluetoothHciL2Socket::~BluetoothHciL2Socket() {
   }
 }
 
-void BluetoothHciL2Socket::connect() {
+BluetoothHciL2ConnectResult BluetoothHciL2Socket::connect() {
   this->_socket = socket(PF_BLUETOOTH, SOCK_SEQPACKET, BTPROTO_L2CAP);
-  if(this->_socket < 0) return;
+  if(this->_socket < 0) return BluetoothHciL2ConnectResult::SETUP_FAILED;
 
   if (bind(this->_socket, (struct sockaddr*)&_l2_src, sizeof(_l2_src)) < 0) {
     close(this->_socket);
     this->_socket = -1;
-    return;
+    return BluetoothHciL2ConnectResult::SETUP_FAILED;
   }
 
-  // the kernel needs to flush the socket before we continue
-  while (::connect(_socket, (struct sockaddr *)&_l2_dst, sizeof(_l2_dst)) == -1 ) {
-    if(errno == EINTR) {
-      continue;
-    }
-    close(_socket);
-    _socket = -1;
-    break;
+  const int socketFlags = fcntl(this->_socket, F_GETFL, 0);
+  if (socketFlags < 0 || fcntl(this->_socket, F_SETFL, socketFlags | O_NONBLOCK) < 0) {
+    close(this->_socket);
+    this->_socket = -1;
+    return BluetoothHciL2ConnectResult::SETUP_FAILED;
   }
+
+  if (::connect(this->_socket, (struct sockaddr *)&_l2_dst, sizeof(_l2_dst)) == 0) {
+    fcntl(this->_socket, F_SETFL, socketFlags);
+    return BluetoothHciL2ConnectResult::CONNECTED;
+  }
+
+  if (errno != EINPROGRESS) {
+    close(this->_socket);
+    this->_socket = -1;
+    return BluetoothHciL2ConnectResult::SETUP_FAILED;
+  }
+
+  // EINPROGRESS confirms that the kernel accepted the request and initiated
+  // the controller connection. Preserve the previous synchronous behavior,
+  // but retain this distinction if the controller ultimately reports failure.
+  struct pollfd descriptor = { this->_socket, POLLOUT, 0 };
+  int pollResult;
+  do {
+    pollResult = poll(&descriptor, 1, -1);
+  } while (pollResult < 0 && errno == EINTR);
+
+  int connectError = 0;
+  socklen_t connectErrorLength = sizeof(connectError);
+  if (pollResult < 0 ||
+      getsockopt(this->_socket, SOL_SOCKET, SO_ERROR, &connectError, &connectErrorLength) < 0 ||
+      connectError != 0) {
+    close(this->_socket);
+    this->_socket = -1;
+    return BluetoothHciL2ConnectResult::CONNECTION_FAILED;
+  }
+
+  fcntl(this->_socket, F_SETFL, socketFlags);
+  return BluetoothHciL2ConnectResult::CONNECTED;
 }
 
 void BluetoothHciL2Socket::disconnect() {
