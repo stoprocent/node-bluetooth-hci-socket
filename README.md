@@ -274,6 +274,18 @@ Set ```BLUETOOTH_HCI_SOCKET_FORCE_USB``` environment variable:
 sudo BLUETOOTH_HCI_SOCKET_FORCE_USB=1 node <file>.js
 ```
 
+#### Bound the Linux L2CAP connect wait
+
+The Linux kernel L2CAP workaround waits up to 2 seconds for a connection by
+default. Override the limit with `BLUETOOTH_HCI_L2CAP_CONNECT_TIMEOUT_MS`:
+
+```sh
+sudo BLUETOOTH_HCI_L2CAP_CONNECT_TIMEOUT_MS=5000 node <file>.js
+```
+
+Set the value to `0` to restore the kernel's unbounded connect wait. Invalid or
+negative values use the 2-second default.
+
 ### FreeBSD
 
 Disable automatic loading of the default Bluetooth stack by putting [no-ubt.conf](https://gist.github.com/myfreeweb/44f4f3e791a057bc4f3619a166a03b87) into ```/usr/local/etc/devd/no-ubt.conf``` and restarting devd (```sudo service devd restart```).
@@ -312,4 +324,3 @@ set BLUETOOTH_HCI_SOCKET_USB_PID=0x065a
 
 node <file>.js
 ```
-

@@ -357,6 +357,13 @@ bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
           return false;
         }
 
+        if (connectResult == BluetoothHciL2ConnectResult::CONNECTION_TIMED_OUT) {
+          // Closing the timed-out kernel socket cancels its pending attempt;
+          // forward the original command through the raw HCI socket.
+          this->_l2sockets_connecting.erase(bdaddr_dst);
+          return false;
+        }
+
         if (connectResult == BluetoothHciL2ConnectResult::CONNECTION_FAILED) {
           // The kernel already sent the controller connection command. Do not
           // fall through to Write() and create a second raw HCI attempt.
