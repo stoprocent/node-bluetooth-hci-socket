@@ -10,7 +10,8 @@ class BluetoothHciSocket;
 enum class BluetoothHciL2ConnectResult {
   SETUP_FAILED,
   CONNECTED,
-  CONNECTION_FAILED
+  CONNECTION_FAILED,
+  CONNECTION_TIMED_OUT
 };
 
 // Bluetooth HCI L2CAP Socket class
@@ -40,7 +41,9 @@ class BluetoothHciL2Socket {
    *
    * SETUP_FAILED means no controller connection was requested, so the caller
    * may safely use another transport. CONNECTION_FAILED means the kernel did
-   * request a controller connection and reported its failure.
+   * request a controller connection and reported its failure, so another raw
+   * attempt would be a duplicate. CONNECTION_TIMED_OUT means the kernel socket
+   * was closed without a result, so the caller may fall back to raw HCI.
    */
   BluetoothHciL2ConnectResult connect();
 

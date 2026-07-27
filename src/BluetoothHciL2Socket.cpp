@@ -1,4 +1,7 @@
 #include <errno.h>
+#include <chrono>
+#include <climits>
+#include <cstdlib>
 #include <fcntl.h>
 #include <poll.h>
 #include <sys/ioctl.h>
@@ -10,6 +13,51 @@
 
 #include "BluetoothHciL2Socket.h"
 #include "BluetoothHciSocket.h"
+
+namespace {
+constexpr int L2CAP_CONNECT_TIMEOUT_MS_DEFAULT = 2000;
+
+int getL2capConnectTimeoutMs() {
+  const char* timeoutEnv = std::getenv("BLUETOOTH_HCI_L2CAP_CONNECT_TIMEOUT_MS");
+  if (timeoutEnv == nullptr) return L2CAP_CONNECT_TIMEOUT_MS_DEFAULT;
+
+  errno = 0;
+  char* end = nullptr;
+  const long timeoutMs = std::strtol(timeoutEnv, &end, 10);
+  if (errno == ERANGE || end == timeoutEnv || *end != '\0' ||
+      timeoutMs < 0 || timeoutMs > INT_MAX) {
+    return L2CAP_CONNECT_TIMEOUT_MS_DEFAULT;
+  }
+
+  return static_cast<int>(timeoutMs);
+}
+
+int waitForConnect(int socket, int timeoutMs) {
+  struct pollfd descriptor = { socket, POLLOUT, 0 };
+
+  if (timeoutMs == 0) {
+    int pollResult;
+    do {
+      pollResult = poll(&descriptor, 1, -1);
+    } while (pollResult < 0 && errno == EINTR);
+    return pollResult;
+  }
+
+  const auto deadline = std::chrono::steady_clock::now() +
+                        std::chrono::milliseconds(timeoutMs);
+  int remainingMs = timeoutMs;
+
+  while (true) {
+    const int pollResult = poll(&descriptor, 1, remainingMs);
+    if (pollResult >= 0 || errno != EINTR) return pollResult;
+
+    const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
+      deadline - std::chrono::steady_clock::now()).count();
+    if (remaining <= 0) return 0;
+    remainingMs = static_cast<int>(remaining);
+  }
+}
+}
 
 BluetoothHciL2Socket::BluetoothHciL2Socket(BluetoothHciSocket* parent,
                                            const bdaddr_t* bdaddr_src,
@@ -81,13 +129,16 @@ BluetoothHciL2ConnectResult BluetoothHciL2Socket::connect() {
   }
 
   // EINPROGRESS confirms that the kernel accepted the request and initiated
-  // the controller connection. Preserve the previous synchronous behavior,
-  // but retain this distinction if the controller ultimately reports failure.
-  struct pollfd descriptor = { this->_socket, POLLOUT, 0 };
-  int pollResult;
-  do {
-    pollResult = poll(&descriptor, 1, -1);
-  } while (pollResult < 0 && errno == EINTR);
+  // the controller connection. Bound the synchronous wait because connect()
+  // runs on the thread driving libuv. A timeout closes the kernel socket before
+  // allowing the caller to fall back to the original raw HCI command.
+  const int pollResult = waitForConnect(this->_socket, getL2capConnectTimeoutMs());
+
+  if (pollResult == 0) {
+    close(this->_socket);
+    this->_socket = -1;
+    return BluetoothHciL2ConnectResult::CONNECTION_TIMED_OUT;
+  }
 
   int connectError = 0;
   socklen_t connectErrorLength = sizeof(connectError);
