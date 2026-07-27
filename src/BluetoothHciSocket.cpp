@@ -350,12 +350,18 @@ bool BluetoothHciSocket::kernelConnectWorkArounds(char * data, int length) {
         this->_l2sockets_connecting[bdaddr_dst] = l2socket_ptr;
 
         // Attempt to connect
-        l2socket_ptr->connect();
+        const auto connectResult = l2socket_ptr->connect();
 
-        // Check if connected successfully
-        if (!l2socket_ptr->isConnected()) {
+        if (connectResult == BluetoothHciL2ConnectResult::SETUP_FAILED) {
           this->_l2sockets_connecting.erase(bdaddr_dst);
           return false;
+        }
+
+        if (connectResult == BluetoothHciL2ConnectResult::CONNECTION_FAILED) {
+          // The kernel already sent the controller connection command. Do not
+          // fall through to Write() and create a second raw HCI attempt.
+          this->_l2sockets_connecting.erase(bdaddr_dst);
+          return true;
         }
       }
     }

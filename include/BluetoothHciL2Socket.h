@@ -7,6 +7,12 @@ class BluetoothHciSocket;
 // Include necessary headers
 #include "BluetoothStructs.h"
 
+enum class BluetoothHciL2ConnectResult {
+  SETUP_FAILED,
+  CONNECTED,
+  CONNECTION_FAILED
+};
+
 // Bluetooth HCI L2CAP Socket class
 class BluetoothHciL2Socket {
  public:
@@ -29,8 +35,14 @@ class BluetoothHciL2Socket {
   /// Destructor
   ~BluetoothHciL2Socket();
 
-  /// Connects to the remote device.
-  void connect();
+  /**
+   * Connects to the remote device.
+   *
+   * SETUP_FAILED means no controller connection was requested, so the caller
+   * may safely use another transport. CONNECTION_FAILED means the kernel did
+   * request a controller connection and reported its failure.
+   */
+  BluetoothHciL2ConnectResult connect();
 
   /// Disconnects the socket.
   void disconnect();
