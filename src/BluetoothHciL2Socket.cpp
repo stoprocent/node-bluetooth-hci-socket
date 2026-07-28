@@ -8,7 +8,6 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <uv.h>
 #include <stdexcept>
 
 #include "BluetoothHciL2Socket.h"
