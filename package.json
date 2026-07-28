@@ -69,7 +69,7 @@
     "semantic-release": "semantic-release",
     "pretest": "npm run rebuild",
     "rebuild": "node-gyp rebuild",
-    "test": "jshint lib/*.js && node test.js"
+    "test": "jshint lib/*.js && node test.js && mocha \"test/**/*.test.js\""
   },
   "jshintConfig": {
     "esversion": 6
