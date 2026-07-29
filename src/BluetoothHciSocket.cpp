@@ -80,6 +80,8 @@ void BluetoothHciSocket::EmitError(const Napi::CallbackInfo& info, const char *s
   Napi::Error error = Napi::Error::New(env, std::string(strerror(errno)));
   error.Set("syscall", Napi::String::New(env, syscall));
   error.Set("errno", Napi::Number::New(env, errno));
+  const char* errno_str = strerrorname_np(errno);
+  if (errno && errno_str) error.Set("code", Napi::String::New(env, errno_str));
 
   try {
     // Get the value held by thisObj
